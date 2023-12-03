@@ -1,12 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 
-const directoryPath = "../../resources/";
+const directoryPath = __basedir + "/resources/";
+// const directoryPath = "../../resources/";
+
 
 function saveJSONToFile(key, jsonObject, vectorClock, callback) {
     const keyFolder = path.join(directoryPath, key);
+    console.log("Key folder: ", keyFolder)
     if (!fs.existsSync(keyFolder)) {
         fs.mkdirSync(keyFolder, { recursive: true });
+        console.log("NO FOLDER, CREATING")
     }
 
     jsonObject.vectorClock = vectorClock;
@@ -57,6 +61,8 @@ function compareVectorClocks(vc1, vc2) {
 function loadJSONFromFile(key, callback) {
     const keyFolder = path.join(directoryPath, key);
 
+    console.log("Reading for key ", key)
+
     fs.readdir(keyFolder, (err, files) => {
         if (err) {
             return callback(err);
@@ -103,9 +109,9 @@ function loadJSONFromFile(key, callback) {
 }
 
 // Example usage
-// const key = 'b';
-// const jsonObj = { name: 'Jane Doe', age: 30 };
-// const vectorClock = { "a": 1, "b": 2, "c": 1 };
+const key = 'a';
+const jsonObj = { name: 'Jane Doe', age: 30 };
+const vectorClock = { "a": 1, "b": 2, "c": 1 };
 
 // saveJSONToFile(key, jsonObj, vectorClock, (err) => {
 //     if (err) {
@@ -114,7 +120,7 @@ function loadJSONFromFile(key, callback) {
 //     }
 // });
 
-// loadJSONFromFile(key, (err, jsonObjects) => {
+// loadJSONFromFile("a", (err, jsonObjects) => {
 //     if (err) {
 //         // handle the error (file not found, JSON parse error, etc.)
 //         console.error('Error loading JSON:', err);

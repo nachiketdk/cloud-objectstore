@@ -1,9 +1,0 @@
-{
-  "name": "John Doe",
-  "age": 30,
-  "vectorClock": {
-    "a": 2,
-    "b": 1,
-    "c": 1
-  }
-}
