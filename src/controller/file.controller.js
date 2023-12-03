@@ -74,11 +74,11 @@ const putFile = async (req, res) => {
         if (err) {
           //NEW KEY 
           let newContext = {...context};
-          newContext[selfName] = 1;
+          newContext[selfName] =  newContext[selfName] + 1;
 
           console.log("NEW KEY")
 
-          saveJSONToFile(key, toStore, newContext, (err) => {
+          saveJSONToFile(key, toStore, forwarded ? context : newContext, (err) => {
               if (err) {
                   // handle the error
                   console.error('Error saving JSON:', err);
@@ -94,25 +94,14 @@ const putFile = async (req, res) => {
               promises.push(makeHttpRequest('POST', nodeSet[i], {
                 "key": key,
                 "data": data,
-                "context": context,
+                "context": newContext,
                 "forwarded": "true"
               }));
             }
 
-            // promises[0].then((response) => {
-            //   if(response.statusCode === 200){
-            //     return res.status(200).send({
-            //       message: `Created the file`  
-            //     })
-            //   }else{
-            //     return res.status(500).send({
-            //       message: `ERROR ${response.body.message}`
-            //     })
-            //   }})
-
             resolveIfAtLeastPromises(N-1, W-1, promises)
-            .then(res => {
-              console.log(res);
+            .then(result => {
+              console.log(result);
               return res.status(200).send({
                 message: `Created the file`  
               })
@@ -127,7 +116,6 @@ const putFile = async (req, res) => {
               message: `Created the file`  
             })
           }
-          
         } else {
           //OLD KEY, CHECK FOR CONFLICTS and IF SMALLEST
           console.log("OLD KEY")
@@ -150,6 +138,7 @@ const putFile = async (req, res) => {
               && compareVectorClocks(context, jsonObjects[i].vectorClock) !== 'equal'
               ) {
               conflict = true;
+              console.log("CONFLICT BETWEEN", context, jsonObjects[i].vectorClock)
               break;
             } 
           }
@@ -163,29 +152,83 @@ const putFile = async (req, res) => {
             let newContext = {...context};
             newContext[selfName] = newContext[selfName] + 1;
 
-            saveJSONToFile(key, toStore, newContext, (err) => {
+            saveJSONToFile(key, toStore, forwarded ? context : newContext, (err) => {
               if (err) {
                   // handle the error
                   console.error('Error saving JSON:', err);
               }
 
-              return res.status(200).send({
-                message: `Updated the file (conflict)`  
-              })
+              if(!forwarded){
+                let promises = [];
+
+                for (let i = 0; i < nodeSet.length; i++) {
+                  if(nodeSet[i] === selfName) continue;
+                  promises.push(makeHttpRequest('POST', nodeSet[i], {
+                    "key": key,
+                    "data": data,
+                    "context": newContext,
+                    "forwarded": "true"
+                  }));
+                }
+
+                resolveIfAtLeastPromises(N-1, W-1, promises)
+                .then(result => {
+                  console.log(result);
+                  return res.status(200).send({
+                    message: `Updated the file (conflict)`  
+                  })
+                }).catch(err => {
+                  console.log(err);
+                  return res.status(500).send({
+                    message: `ERROR ${err}`
+                  })
+                });
+              }else{
+                return res.status(200).send({
+                  message: `Updated the file (conflict)`  
+                })
+              }
             });
           }else{
             //NO CONFLICT, UPDATE VECTOR CLOCK AND STORE
             let newContext = {...context};
             newContext[selfName] = newContext[selfName] + 1;
-            saveJSONToFile(key, toStore, newContext, (err) => {
+            saveJSONToFile(key, toStore, forwarded ? context : newContext, (err) => {
               if (err) {
                   // handle the error
                   console.error('Error saving JSON:', err);
               }
 
-              return res.status(200).send({
-                message: `Updated the file`  
-              })
+              if(!forwarded){
+                let promises = [];
+
+                for (let i = 0; i < nodeSet.length; i++) {
+                  if(nodeSet[i] === selfName) continue;
+                  promises.push(makeHttpRequest('POST', nodeSet[i], {
+                    "key": key,
+                    "data": data,
+                    "context": newContext,
+                    "forwarded": "true"
+                  }));
+                }
+
+                resolveIfAtLeastPromises(N-1, W-1, promises)
+                .then(result => {
+                  console.log(result);
+                  return res.status(200).send({
+                    message: `Updated the file`  
+                  })
+                }).catch(err => {
+                  console.log(err);
+                  return res.status(500).send({
+                    message: `ERROR ${err}`
+                  })
+                });
+              }else{
+                return res.status(200).send({
+                  message: `Updated the file`  
+                })
+              }
             });
           }
         }
