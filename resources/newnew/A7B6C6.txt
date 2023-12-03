@@ -1,0 +1,8 @@
+{
+  "data": "hello544",
+  "vectorClock": {
+    "A": 7,
+    "B": 6,
+    "C": 6
+  }
+}

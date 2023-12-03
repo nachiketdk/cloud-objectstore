@@ -1,36 +1,66 @@
 const ConsistentHashing = require('../utils/consistentHashing');
 const {saveJSONToFile, loadJSONFromFile, compareVectorClocks} = require('../utils/storageManager');
+const request = require('request');
+const {resolveIfAtLeastPromises} = require('../utils/promises');
 
-const N = 3;
-const R = 2;
-const W = 2;
+const N = 3;  // MAKE THIS DYNAMIC
+const R = 1;
+const W = 1;
 
 const nodeIPs = {               // comes from API call, //also give an option from env variable
   "A": "http://localhost:8080",
   "B": "http://localhost:8081",
   "C": "http://localhost:8082",
-  "D": "http://localhost:8083"
 };
 
 const selfName = "A" //comes from env variable
+
+function makeHttpRequest(method, nodeName, requestBody) {
+  return new Promise((resolve, reject) => {
+      const options = {
+          method: method,
+          url: `${nodeIPs[nodeName]}/${method === 'GET' ? "get" : "put"}File`,
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+      };
+
+      request(options, (error, response) => {
+          if (error) {
+              reject(new Error(error));
+          } else {
+              // Optional: Check for non-200 status codes if necessary
+            console.log("------ received response")
+            if(response.statusCode === 200){
+              resolve({
+                statusCode: response.statusCode,
+                body: JSON.parse(response.body)
+              }); 
+            }else{
+              reject(new Error(response.body));
+            } 
+          }
+      });
+  });
+}
 
 const putFile = async (req, res) => {
   try {
     const key = req.body.key;
     const data = req.body.data;
     const context = req.body.context;
+    const forwarded = req.body.hasOwnProperty('forwarded') && req.body.forwarded === "true" ? true : false;
 
     const toStore = {
       data: data,
     }
-
     /* example context
     {
       A:1,
       B:2
     }
     */
-
     const loadbalancer = new ConsistentHashing(Object.keys(nodeIPs), 500, 'md5'); //use siphash
     const nodeSet = loadbalancer.getNodeset(key);
 
@@ -53,11 +83,51 @@ const putFile = async (req, res) => {
                   // handle the error
                   console.error('Error saving JSON:', err);
               }
+          });
 
+          if(!forwarded){
+            // FORWARD TO THE OTHER NODES
+            let promises = [];
+
+            for (let i = 0; i < nodeSet.length; i++) {
+              if(nodeSet[i] === selfName) continue;
+              promises.push(makeHttpRequest('POST', nodeSet[i], {
+                "key": key,
+                "data": data,
+                "context": context,
+                "forwarded": "true"
+              }));
+            }
+
+            // promises[0].then((response) => {
+            //   if(response.statusCode === 200){
+            //     return res.status(200).send({
+            //       message: `Created the file`  
+            //     })
+            //   }else{
+            //     return res.status(500).send({
+            //       message: `ERROR ${response.body.message}`
+            //     })
+            //   }})
+
+            resolveIfAtLeastPromises(N-1, W-1, promises)
+            .then(res => {
+              console.log(res);
               return res.status(200).send({
                 message: `Created the file`  
               })
-          });
+            }).catch(err => {
+              console.log(err);
+              return res.status(500).send({
+                message: `ERROR ${err}`
+              })
+            });
+          }else{
+            return res.status(200).send({
+              message: `Created the file`  
+            })
+          }
+          
         } else {
           //OLD KEY, CHECK FOR CONFLICTS and IF SMALLEST
           console.log("OLD KEY")
@@ -122,8 +192,26 @@ const putFile = async (req, res) => {
       });
     }else{
       // FORWARD TO THE ACTUAL COORDINATOR NODE
-      return res.status(200).send({
-        message: `Forwarding to node ${nodeSet[0]}`  
+      console.log("FORWARDING TO NODE", nodeSet[0])
+
+      makeHttpRequest('POST', nodeSet[0], {
+        "key": key,
+        "data": data,
+        "context": context
+      }).then((response) => {
+        if(response.statusCode === 200){
+          return res.status(200).send({
+            message: `Handled by node ${nodeSet[0]}, ${response.body.message}`  
+          })
+        }else{
+          return res.status(500).send({
+            message: `ERROR ${response.body.message}`  
+          })
+        }
+      }).catch((err) => {
+        return res.status(500).send({
+          message: `ERROR ${err}`  
+        })
       })
     }
   } catch (err) {
@@ -160,8 +248,27 @@ const getFile = async (req, res) => {
       });      
     }else{
       // FORWARD TO THE ACTUAL COORDINATOR NODE
-      return res.status(200).send({
-        message: `Forwarding to node ${nodeSet[0]}`  
+      console.log("FORWARDING TO NODE", nodeSet[0])
+
+      makeHttpRequest('GET', nodeSet[0], {
+        "key": key,
+      }).then((response) => {
+        console.log("response is")
+        console.log(response)
+        console.log("response is")
+        if(response.statusCode === 200){
+          return res.status(200).send({
+            message: response.body.message  
+          })
+        }else{
+          return res.status(500).send({
+            message: `ERROR ${response.body.message}`  
+          })
+        }
+      }).catch((err) => {
+        return res.status(500).send({
+          message: `ERROR ${err}`  
+        })
       })
     }
   }catch (err) {
