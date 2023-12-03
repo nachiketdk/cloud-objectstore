@@ -4,6 +4,7 @@ const path = require('path');
 const directoryPath = __basedir + "/resources/";
 // const directoryPath = "../../resources/";
 
+//RUN GARBAGE COLLECTION AT AN INTERVAL
 
 function saveJSONToFile(key, jsonObject, vectorClock, callback) {
     const keyFolder = path.join(directoryPath, key);

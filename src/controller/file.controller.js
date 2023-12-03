@@ -89,8 +89,11 @@ const putFile = async (req, res) => {
               message: `Already have updated version of the file`  
             })
           }else if(conflict){
-            //CONFLICT, STORE
-            saveJSONToFile(key, toStore, context, (err) => {
+            //CONFLICT, UPDATE VECTOR CLOCK AND STORE
+            let newContext = {...context};
+            newContext[selfName] = newContext[selfName] + 1;
+
+            saveJSONToFile(key, toStore, newContext, (err) => {
               if (err) {
                   // handle the error
                   console.error('Error saving JSON:', err);
@@ -146,7 +149,9 @@ const getFile = async (req, res) => {
       loadJSONFromFile(key, (err, jsonObjects) => {
         if (err) {
             console.error('Error loading JSON:', err);
-            //KEY NOT FOUND OR ERROR, HANDLE BOTH
+            return res.status(500).send({
+              message: "Key not found"
+            });
         } else {
           return res.status(200).send({
             message: jsonObjects
