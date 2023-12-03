@@ -28,6 +28,39 @@ function saveJSONToFile(key, jsonObject, vectorClock, callback) {
     });
 }
 
+function filterDataNodes(dataNodes){
+    const isSmallestVectorClock = (dataNodes, vectorClock) => {
+        for(let i = 0; i < dataNodes.length; i++){
+            let compareResult = compareVectorClocks(vectorClock, dataNodes[i].vectorClock);
+            if(compareResult !== 'second' && compareResult !== 'equal'){
+                return false;
+            }
+        }
+        return true;
+    }
+
+    console.log(dataNodes)
+
+    let filteredDataNodes = dataNodes.filter(dataNode => !isSmallestVectorClock(dataNodes, dataNode.vectorClock));
+
+    let uniqueDataNodes = [];
+
+    filteredDataNodes.forEach(dataNode => {
+        let isUnique = true;
+        uniqueDataNodes.forEach(uniqueDataNode => {
+            if(compareVectorClocks(dataNode.vectorClock, uniqueDataNode.vectorClock) === 'equal'){
+                isUnique = false;
+            }
+        });
+
+        if(isUnique){
+            uniqueDataNodes.push(dataNode);
+        }
+    })
+
+    return uniqueDataNodes;
+}
+
 function compareVectorClocks(vc1, vc2) {
     let firstGreater = false;
     let secondGreater = false;
@@ -134,5 +167,6 @@ const vectorClock = { "a": 1, "b": 2, "c": 1 };
 module.exports = {
     saveJSONToFile,
     loadJSONFromFile,
-    compareVectorClocks
+    compareVectorClocks,
+    filterDataNodes
 };
