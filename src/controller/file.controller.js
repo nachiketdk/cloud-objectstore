@@ -7,13 +7,13 @@ const N = 3;  // MAKE THIS DYNAMIC
 const R = 1;
 const W = 1;
 
-const nodeIPs = {               // comes from API call, //also give an option from env variable
-  "A": "http://localhost:8080",
-  "B": "http://localhost:8081",
-  "C": "http://localhost:8082",
-};
+// initialize nodesIP
+const nodeIPs = {};
+for (let i = 0; i < process.env.nodes; i++) {
+  nodeIPs[String.fromCharCode(65 + i)] = `http://container${i + 1}:3000`;
+}
 
-const selfName = "A" //comes from env variable
+const selfName = process.env.selfName //comes from env variable
 
 function makeHttpRequest(method, nodeName, requestBody) {
   return new Promise((resolve, reject) => {
