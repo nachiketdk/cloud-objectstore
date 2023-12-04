@@ -11,18 +11,17 @@ const {
   resolveIfAtLeastPromisesResult,
 } = require("../utils/promises");
 
-const N = 3; // MAKE THIS DYNAMIC
-const R = 2;
-const W = 2;
+const N = process.env.N || 4;
+const R = process.env.R || 3;
+const W = process.env.W || 3;
 
-const nodeIPs = {
-  // comes from API call, //also give an option from env variable
-  A: "http://localhost:8080",
-  B: "http://localhost:8081",
-  C: "http://localhost:8082",
-};
+// initialize nodesIP
+const nodeIPs = {};
+for (let i = 0; i < process.env.nodes; i++) {
+  nodeIPs[String.fromCharCode(65 + i)] = `http://container${i + 1}:3000`;
+}
 
-const selfName = "A"; //comes from env variable
+const selfName = process.env.selfName //comes from env variable
 
 function readRepair(key, otherObject, nodeName) {
   const otherClock = otherObject.vectorClock;
