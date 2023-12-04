@@ -1,0 +1,9 @@
+{
+  "data": "helloo",
+  "vectorClock": {
+    "A": 2,
+    "B": 2,
+    "C": 2,
+    "D": 0
+  }
+}
