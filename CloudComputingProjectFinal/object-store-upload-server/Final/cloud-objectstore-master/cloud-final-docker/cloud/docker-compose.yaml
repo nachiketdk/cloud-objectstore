@@ -1,0 +1,74 @@
+version: "3.9"
+
+networks:
+  my-custom-network:
+    driver: bridge
+
+services:
+  container1:
+    image: cloud
+    expose:
+      - "3000"
+    ports:
+      - "3000:3000"
+    environment:
+      - selfName=A
+      - nodes=4
+      - N=3
+      - R=2
+      - W=2
+    networks:
+      my-custom-network:
+        aliases:
+          - container1
+
+  container2:
+    image: cloud
+    expose:
+      - "3000"
+    ports:
+      - "3001:3000"
+    environment:
+      - selfName=B
+      - nodes=4
+      - N=3
+      - R=2
+      - W=2
+    networks:
+      my-custom-network:
+        aliases:
+          - container2
+
+  container3:
+    image: cloud
+    expose:
+      - "3000"
+    ports:
+      - "3002:3000"
+    environment:
+      - selfName=C
+      - nodes=4
+      - N=3
+      - R=2
+      - W=2
+    networks:
+      my-custom-network:
+        aliases:
+          - container3
+
+  container4:
+    image: cloud
+    expose:
+      - "3000"
+    ports:
+      - "3003:3000"
+    environment:
+      - selfName=D
+      - nodes=4
+      - N=3
+      - R=2
+      - W=2
+    networks:
+      my-custom-network:
+        aliases:
+          - container4

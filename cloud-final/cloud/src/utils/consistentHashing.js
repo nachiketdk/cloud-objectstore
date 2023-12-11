@@ -8,25 +8,21 @@ class ConsistentHashing {
         this.keys = [];
         this.nodes = [];
 
-        // Initialize the ring with given nodes and replicas
         nodes.forEach(node => this.addNode(node));
     }
 
     addNode(node) {
-        // Add the node and it's replicas to the ring
         for (let i = 0; i < this.replicas; i++) {
             const key = this.crypto((node.id || node) + ':' + i);
             this.keys.push(key);
             this.ring[key] = node;
         }
 
-        // Sort the keys to maintain ordered ring for the binary search
         this.keys.sort();
         this.nodes = [...new Set(Object.values(this.ring))];
     }
 
     removeNode(node) {
-        // Remove node and it's replicas from the ring
         for (let i = 0; i < this.replicas; i++) {
             const key = this.crypto((node.id || node) + ':' + i);
             delete this.ring[key];
@@ -37,7 +33,6 @@ class ConsistentHashing {
             }
         }
 
-        // Update the list of unique nodes
         this.nodes = [...new Set(Object.values(this.ring))];
     }
 
@@ -50,13 +45,11 @@ class ConsistentHashing {
         return this.ring[this.keys[pos]];
     }
 
-    // Modified to return a set of 3 nodes for the consistency requirement
     getNodeset(key) {
         const hash = this.crypto(key);
         const pos = this.getNodePosition(hash);
         let nodeset = [];
 
-        // Finding the next two distinct nodes after the hashed position
         let uniqueNodesCount = 0;
         for (let i = pos; uniqueNodesCount < 3; i = (i + 1) % this.keys.length) {
             const currentNode = this.ring[this.keys[i]];
@@ -89,7 +82,6 @@ class ConsistentHashing {
             }
         }
 
-        // Handle the case where hash is greater than any existing keys
         return upper < 0 ? this.keys.length - 1 : upper;
     }
 

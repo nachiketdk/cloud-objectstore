@@ -1,0 +1,34 @@
+version: "3.7"
+services:
+  docker-mysql:
+    image: mariadb:11.1.3
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mysql
+      - MYSQL_PASSWORD=password
+    ports:
+      - 3307:3306
+#    networks:
+#      - springapimysql-net
+    volumes:
+      - ./docker/mysql/data:/var/lib/mysql:rw
+
+
+
+  api_service:
+    build: .
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      - spring.datasource.url=jdbc:mysql://docker-mysql:3306/mysql?allowPublicKeyRetrieval=true
+    depends_on:
+      - docker-mysql
+#    networks:
+#      - springapimysql-net
+#    volumes:
+#      - .m2:/root/.m2
+
+#networks:
+#  springapimysql-net:
+
